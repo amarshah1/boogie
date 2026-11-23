@@ -1,11 +1,3 @@
-function {:inline} Ones<T>(set: [T]bool): [One T]bool {
-    (lambda x: One T:: set[x->val])
-}
-
-function {:inline} Vals<T>(one_set: [One T]bool): [T]bool {
-    (lambda x: T:: one_set[One(x)])
-}
-
 // Two children zero disjoint slices of a contiguous 1D tensor and signal back their memory.
 const unique tid_0: Tid;
 const unique tid_1: Tid;
@@ -42,9 +34,12 @@ ensures {:layer 1} Set_IsSubset(Tensor1DAddrs(Slice1D(tensor, k, tensor->dim0 - 
     ids_0 := Ones(Tensor1DAddrs(slice_0));
     ids_1 := Ones(Tensor1DAddrs(slice_1));
     mem := init_mem;
-    call mem_0 := Map_Split(mem, ids_0);
-    call mem_1 := Map_Split(mem, ids_1);
-
+    assume {:layer 1} (forall {:pool "A"} x: int ::
+        (exists y: int :: {:add_to_pool "Tensor1DIndex", x, x + k} true));
+    call mem, mem_0 := Map_Split_Wrapper(mem, Tensor1DAddrs(tensor), Tensor1DAddrs(slice_0));
+    call mem, mem_1 := Map_Split_Wrapper(mem,
+        Set_Difference(Tensor1DAddrs(tensor), Tensor1DAddrs(slice_0)), Tensor1DAddrs(slice_1));
+    assume false;
     signal_0 := One(SemSignal(init_sem_id->val, tid_0));
     signal_1 := One(SemSignal(init_sem_id->val, tid_1));
     awaited := Set_Add(Set_Singleton(signal_0), signal_1);
